@@ -1,5 +1,11 @@
-import { OpenAPIRegistry, OpenApiGeneratorV3 } from "@asteasolutions/zod-to-openapi";
+import {
+  OpenAPIRegistry,
+  OpenApiGeneratorV3,
+  extendZodWithOpenApi,
+} from "@asteasolutions/zod-to-openapi";
 import { z } from "zod";
+
+extendZodWithOpenApi(z);
 
 export const registry = new OpenAPIRegistry();
 
@@ -52,57 +58,171 @@ const CreateAnnouncementSchema = z.object({
 });
 
 registry.registerPath({
-  method: "post", path: "/auth/register", tags: ["Auth"], summary: "Register a user",
-  request: { body: { content: { "application/json": { schema: RegisterSchema } } } },
-  responses: { 201: { description: "User registered", content: { "application/json": { schema: AuthResponseSchema } } }, 409: { description: "Username or email already taken", content: { "application/json": { schema: ErrorSchema } } }, 400: { description: "Validation failed" } },
+  method: "post",
+  path: "/auth/register",
+  tags: ["Auth"],
+  summary: "Register a user",
+  request: {
+    body: { content: { "application/json": { schema: RegisterSchema } } },
+  },
+  responses: {
+    201: {
+      description: "User registered",
+      content: { "application/json": { schema: AuthResponseSchema } },
+    },
+    409: {
+      description: "Username or email already taken",
+      content: { "application/json": { schema: ErrorSchema } },
+    },
+    400: { description: "Validation failed" },
+  },
 });
 registry.registerPath({
-  method: "post", path: "/auth/login", tags: ["Auth"], summary: "Log in",
-  request: { body: { content: { "application/json": { schema: LoginSchema } } } },
-  responses: { 200: { description: "Logged in", content: { "application/json": { schema: AuthResponseSchema } } }, 401: { description: "Invalid credentials" } },
+  method: "post",
+  path: "/auth/login",
+  tags: ["Auth"],
+  summary: "Log in",
+  request: {
+    body: { content: { "application/json": { schema: LoginSchema } } },
+  },
+  responses: {
+    200: {
+      description: "Logged in",
+      content: { "application/json": { schema: AuthResponseSchema } },
+    },
+    401: { description: "Invalid credentials" },
+  },
 });
 registry.registerPath({
-  method: "post", path: "/auth/refresh", tags: ["Auth"], summary: "Rotate refresh token",
-  request: { body: { content: { "application/json": { schema: RefreshSchema } } } },
-  responses: { 200: { description: "New token pair", content: { "application/json": { schema: TokenPairSchema } } }, 401: { description: "Invalid refresh token" } },
+  method: "post",
+  path: "/auth/refresh",
+  tags: ["Auth"],
+  summary: "Rotate refresh token",
+  request: {
+    body: { content: { "application/json": { schema: RefreshSchema } } },
+  },
+  responses: {
+    200: {
+      description: "New token pair",
+      content: { "application/json": { schema: TokenPairSchema } },
+    },
+    401: { description: "Invalid refresh token" },
+  },
 });
 registry.registerPath({
-  method: "post", path: "/auth/logout", tags: ["Auth"], summary: "Log out",
+  method: "post",
+  path: "/auth/logout",
+  tags: ["Auth"],
+  summary: "Log out",
   security: [{ bearerAuth: [] }],
-  responses: { 204: { description: "Logged out" }, 401: { description: "Unauthorized" } },
+  responses: {
+    204: { description: "Logged out" },
+    401: { description: "Unauthorized" },
+  },
 });
 registry.registerPath({
-  method: "get", path: "/auth/me", tags: ["Auth"], summary: "Get current user",
+  method: "get",
+  path: "/auth/me",
+  tags: ["Auth"],
+  summary: "Get current user",
   security: [{ bearerAuth: [] }],
-  responses: { 200: { description: "Current user", content: { "application/json": { schema: UserSchema } } }, 401: { description: "Unauthorized" } },
+  responses: {
+    200: {
+      description: "Current user",
+      content: { "application/json": { schema: UserSchema } },
+    },
+    401: { description: "Unauthorized" },
+  },
 });
 registry.registerPath({
-  method: "get", path: "/announcements", tags: ["Announcements"], summary: "List announcements",
-  request: { query: z.object({ page: z.coerce.number().int().positive().optional(), search: z.string().optional(), sort: z.enum(["newest", "oldest"]).optional() }) },
+  method: "get",
+  path: "/announcements",
+  tags: ["Announcements"],
+  summary: "List announcements",
+  request: {
+    query: z.object({
+      page: z.coerce.number().int().positive().optional(),
+      search: z.string().optional(),
+      sort: z.enum(["newest", "oldest"]).optional(),
+    }),
+  },
   responses: { 200: { description: "Paginated announcements" } },
 });
 registry.registerPath({
-  method: "get", path: "/announcements/{id}", tags: ["Announcements"], summary: "Get announcement",
+  method: "get",
+  path: "/announcements/{id}",
+  tags: ["Announcements"],
+  summary: "Get announcement",
   request: { params: z.object({ id: z.string() }) },
-  responses: { 200: { description: "Announcement", content: { "application/json": { schema: AnnouncementSchema } } }, 404: { description: "Announcement not found" } },
+  responses: {
+    200: {
+      description: "Announcement",
+      content: { "application/json": { schema: AnnouncementSchema } },
+    },
+    404: { description: "Announcement not found" },
+  },
 });
 registry.registerPath({
-  method: "post", path: "/announcements", tags: ["Announcements"], summary: "Create announcement",
+  method: "post",
+  path: "/announcements",
+  tags: ["Announcements"],
+  summary: "Create announcement",
   security: [{ bearerAuth: [] }],
-  request: { body: { content: { "application/json": { schema: CreateAnnouncementSchema } } } },
-  responses: { 201: { description: "Created", content: { "application/json": { schema: AnnouncementSchema } } }, 400: { description: "Validation failed" }, 401: { description: "Unauthorized" } },
+  request: {
+    body: {
+      content: { "application/json": { schema: CreateAnnouncementSchema } },
+    },
+  },
+  responses: {
+    201: {
+      description: "Created",
+      content: { "application/json": { schema: AnnouncementSchema } },
+    },
+    400: { description: "Validation failed" },
+    401: { description: "Unauthorized" },
+  },
 });
 registry.registerPath({
-  method: "patch", path: "/announcements/{id}", tags: ["Announcements"], summary: "Update own announcement",
+  method: "patch",
+  path: "/announcements/{id}",
+  tags: ["Announcements"],
+  summary: "Update own announcement",
   security: [{ bearerAuth: [] }],
-  request: { params: z.object({ id: z.string() }), body: { content: { "application/json": { schema: CreateAnnouncementSchema.partial().refine((v) => Object.keys(v).length > 0) } } },
-  responses: { 200: { description: "Updated", content: { "application/json": { schema: AnnouncementSchema } } }, 403: { description: "Access denied" }, 404: { description: "Announcement not found" } },
+  request: {
+    params: z.object({ id: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: CreateAnnouncementSchema.partial().refine(
+            (v) => Object.keys(v).length > 0,
+          ),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Updated",
+      content: {
+        "application/json": { schema: AnnouncementSchema },
+      },
+    },
+    403: { description: "Access denied" },
+    404: { description: "Announcement not found" },
+  },
 });
 registry.registerPath({
-  method: "delete", path: "/announcements/{id}", tags: ["Announcements"], summary: "Delete own announcement",
+  method: "delete",
+  path: "/announcements/{id}",
+  tags: ["Announcements"],
+  summary: "Delete own announcement",
   security: [{ bearerAuth: [] }],
   request: { params: z.object({ id: z.string() }) },
-  responses: { 204: { description: "Deleted" }, 403: { description: "Access denied" }, 404: { description: "Announcement not found" } },
+  responses: {
+    204: { description: "Deleted" },
+    403: { description: "Access denied" },
+    404: { description: "Announcement not found" },
+  },
 });
 
 export function getOpenApiDocument() {

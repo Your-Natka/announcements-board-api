@@ -14,7 +14,8 @@ function accessSecret(): string {
 
 function refreshSecret(): string {
   const secret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
-  if (!secret) throw new Error("JWT_REFRESH_SECRET or JWT_SECRET must be configured");
+  if (!secret)
+    throw new Error("JWT_REFRESH_SECRET or JWT_SECRET must be configured");
   return secret;
 }
 
@@ -26,18 +27,28 @@ function createAccessToken(user: { id: number; username: string }): string {
 }
 
 function createRefreshToken(user: { id: number; username: string }): string {
-  return jwt.sign({ username: user.username, type: "refresh" }, refreshSecret(), {
-    subject: String(user.id),
-    expiresIn: REFRESH_TTL,
-  });
+  return jwt.sign(
+    { username: user.username, type: "refresh" },
+    refreshSecret(),
+    {
+      subject: String(user.id),
+      expiresIn: REFRESH_TTL,
+    },
+  );
 }
 
-function publicUser<T extends { password?: string }>(user: T): Omit<T, "password"> {
+function publicUser<T extends { password?: string }>(
+  user: T,
+): Omit<T, "password"> {
   const { password: _password, ...safeUser } = user;
   return safeUser;
 }
 
-export async function register(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function register(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const { username, email, password, name } = req.body;
     const existing = await prisma.user.findFirst({
@@ -52,11 +63,19 @@ export async function register(req: Request, res: Response, next: NextFunction):
     const hashedPassword = await bcrypt.hash(password, 12);
     const user = await prisma.user.create({
       data: { username, email, password: hashedPassword, name },
-      select: { id: true, username: true, email: true, name: true, createdAt: true },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        name: true,
+        createdAt: true,
+      },
     });
     const accessToken = createAccessToken(user);
     const refreshToken = createRefreshToken(user);
-    await prisma.refreshToken.create({ data: { token: refreshToken, userId: user.id } });
+    await prisma.refreshToken.create({
+      data: { token: refreshToken, userId: user.id },
+    });
 
     res.status(201).json({ user, accessToken, refreshToken });
   } catch (error: any) {
@@ -68,7 +87,11 @@ export async function register(req: Request, res: Response, next: NextFunction):
   }
 }
 
-export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function login(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const { username, password } = req.body;
     const user = await prisma.user.findUnique({ where: { username } });
@@ -81,10 +104,12 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     const accessToken = createAccessToken(user);
     const refreshToken = createRefreshToken(user);
     await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
-    await prisma.refreshToken.create({ data: { token: refreshToken, userId: user.id } });
+    await prisma.refreshToken.create({
+      data: { token: refreshToken, userId: user.id },
+    });
 
     res.status(200).json({
-      user: publicUser({ id: user.id, username: user.username, email: user.email, name: user.name }),
+      user: publicUser(user),
       accessToken,
       refreshToken,
     });
@@ -93,7 +118,11 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
   }
 }
 
-export async function refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function refresh(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const { refreshToken } = req.body;
     let payload: jwt.JwtPayload;
@@ -109,7 +138,9 @@ export async function refresh(req: Request, res: Response, next: NextFunction): 
       return;
     }
 
-    const stored = await prisma.refreshToken.findUnique({ where: { token: refreshToken } });
+    const stored = await prisma.refreshToken.findUnique({
+      where: { token: refreshToken },
+    });
     if (!stored || stored.userId !== Number(payload.sub)) {
       res.status(401).json({ message: "Invalid refresh token" });
       return;
@@ -129,16 +160,24 @@ export async function refresh(req: Request, res: Response, next: NextFunction): 
     const newRefreshToken = createRefreshToken(user);
     await prisma.$transaction([
       prisma.refreshToken.deleteMany({ where: { token: refreshToken } }),
-      prisma.refreshToken.create({ data: { token: newRefreshToken, userId: user.id } }),
+      prisma.refreshToken.create({
+        data: { token: newRefreshToken, userId: user.id },
+      }),
     ]);
 
-    res.status(200).json({ accessToken: newAccessToken, refreshToken: newRefreshToken });
+    res
+      .status(200)
+      .json({ accessToken: newAccessToken, refreshToken: newRefreshToken });
   } catch (error) {
     next(error);
   }
 }
 
-export async function logout(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function logout(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     if (!req.user) {
       res.status(401).json({ message: "Unauthorized" });
@@ -151,7 +190,11 @@ export async function logout(req: Request, res: Response, next: NextFunction): P
   }
 }
 
-export async function me(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function me(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     if (!req.user) {
       res.status(401).json({ message: "Unauthorized" });
@@ -159,7 +202,13 @@ export async function me(req: Request, res: Response, next: NextFunction): Promi
     }
     const user = await prisma.user.findUnique({
       where: { id: req.user.sub },
-      select: { id: true, username: true, email: true, name: true, createdAt: true },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        name: true,
+        createdAt: true,
+      },
     });
     if (!user) {
       res.status(401).json({ message: "Unauthorized" });

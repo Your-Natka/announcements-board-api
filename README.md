@@ -1,125 +1,225 @@
 # Announcements Board API
 
-Чистий JSON REST API для дошки оголошень на Express, TypeScript, Prisma, PostgreSQL, Zod та JWT access/refresh tokens.
+A RESTful API for an announcements board built with **Node.js, Express, TypeScript, PostgreSQL, and Prisma ORM**.
 
-## Рекомендована назва репозиторію
+The application provides user authentication, announcement management, input validation, and API documentation through Swagger UI.
 
-`announcements-board-api`
+## Features
 
-## Вимоги
+- User registration and login
+- JWT-based authentication
+- Access and refresh token handling
+- Refresh token rotation
+- User profile retrieval
+- Create, read, update, and delete announcements
+- Announcement ownership and access control
+- Request validation using Zod
+- Pagination for announcements
+- PostgreSQL database integration with Prisma ORM
+- Interactive API documentation using Swagger UI
+- TypeScript strict mode
 
-- Node.js 20+
-- PostgreSQL
-- npm
+## Tech Stack
 
-## Запуск локально
+- **Node.js** — JavaScript runtime
+- **Express** — web application framework
+- **TypeScript** — static typing
+- **PostgreSQL** — relational database
+- **Prisma ORM** — database access and migrations
+- **JWT** — authentication and authorization
+- **Zod** — request validation
+- **Swagger / OpenAPI** — API documentation
 
-1. Встановіть залежності:
+## Project Structure
 
-   ```bash
-   npm install
-   ```
+```text
+announcements-board-api/
+├── prisma/
+│   └── schema.prisma
+├── src/
+│   ├── controllers/
+│   ├── middleware/
+│   ├── routes/
+│   ├── services/
+│   ├── schemas/
+│   └── openapi.ts
+├── app.ts
+├── prisma/
+├── package.json
+├── tsconfig.json
+├── .env.example
+└── README.md
+```
 
-2. Створіть локальний env-файл і заповніть параметри:
+## Getting Started
 
-   ```bash
-   cp .env.example .env
-   ```
+### 1. Clone the repository
 
-   Переконайтеся, що PostgreSQL запущений і база `announcements_board` існує. За потреби змініть `DATABASE_URL`.
+```bash
+git clone https://github.com/Your-Natka/announcements-board-api.git
+cd announcements-board-api
+```
 
-3. Створіть Prisma Client і застосуйте міграцію:
+### 2. Install dependencies
 
-   ```bash
-   npm run prisma:generate
-   npm run prisma:migrate -- --name init
-   ```
+```bash
+npm install
+```
 
-   У репозиторії є початкова SQL-міграція. Якщо Prisma повідомить про стан міграцій, перевірте підключення та стан вашої бази.
+### 3. Configure environment variables
 
-4. Запустіть сервер:
+Create a `.env` file in the root directory:
 
-   ```bash
-   npm run dev
-   ```
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/announcements_board?schema=public"
+JWT_SECRET="your_access_token_secret"
+JWT_REFRESH_SECRET="your_refresh_token_secret"
+PORT=3000
+```
 
-   Сервер працює на `http://localhost:3000`, документація OpenAPI — `http://localhost:3000/api-docs`.
+Replace the database credentials and JWT secrets with your own values.
 
-5. Перед здачею перевірте TypeScript:
+### 4. Set up the database
 
-   ```bash
-   npm run typecheck
-   npm run build
-   ```
+Make sure PostgreSQL is running and the database exists.
 
-## Маршрути
+Generate the Prisma Client:
 
-### Auth
+```bash
+npm run prisma:generate
+```
 
-- `POST /auth/register`
-- `POST /auth/login`
-- `POST /auth/refresh`
-- `POST /auth/logout` — потрібен `Authorization: Bearer <accessToken>`
-- `GET /auth/me` — потрібен `Authorization: Bearer <accessToken>`
+Run database migrations:
+
+```bash
+npm run prisma:migrate -- --name init
+```
+
+### 5. Run the development server
+
+```bash
+npm run dev
+```
+
+The API will be available at:
+
+```text
+http://localhost:3000
+```
+
+## API Documentation
+
+Interactive Swagger documentation is available at:
+
+```text
+http://localhost:3000/api-docs
+```
+
+Swagger UI allows you to explore endpoints, provide request data, authorize requests, and execute API operations.
+
+## API Endpoints
+
+### Authentication
+
+| Method | Endpoint         | Description                        |
+| ------ | ---------------- | ---------------------------------- |
+| POST   | `/auth/register` | Register a new user                |
+| POST   | `/auth/login`    | Log in and receive tokens          |
+| POST   | `/auth/refresh`  | Refresh authentication tokens      |
+| POST   | `/auth/logout`   | Log out and revoke refresh tokens  |
+| GET    | `/auth/me`       | Get the current authenticated user |
 
 ### Announcements
 
-- `GET /announcements?page=1&search=laptop&sort=newest`
-- `GET /announcements/:id`
-- `POST /announcements` — захищений
-- `PATCH /announcements/:id` — захищений, лише власник
-- `DELETE /announcements/:id` — захищений, лише власник
+| Method | Endpoint             | Description                       |
+| ------ | -------------------- | --------------------------------- |
+| POST   | `/announcements`     | Create an announcement            |
+| GET    | `/announcements`     | Get announcements with pagination |
+| GET    | `/announcements/:id` | Get an announcement by ID         |
+| PATCH  | `/announcements/:id` | Update an announcement            |
+| DELETE | `/announcements/:id` | Delete an announcement            |
 
-`sort` підтримує `newest` та `oldest`. На сторінці 10 оголошень. Пошук за `title` нечутливий до регістру.
-
-## Приклади запитів
-
-Реєстрація:
-
-```bash
-curl -X POST http://localhost:3000/auth/register \\
-  -H 'Content-Type: application/json' \\
-  -d '{"username":"ivan_petrenko","email":"ivan@example.com","password":"StrongPass123","name":"Іван"}'
-```
-
-Створення оголошення (підставте access token):
-
-```bash
-curl -X POST http://localhost:3000/announcements \\
-  -H 'Content-Type: application/json' \\
-  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \\
-  -d '{"title":"Продам велосипед","description":"Гірський велосипед, 21 швидкість","price":8000,"category":"sale"}'
-```
-
-Оновлення токенів:
-
-```bash
-curl -X POST http://localhost:3000/auth/refresh \\
-  -H 'Content-Type: application/json' \\
-  -d '{"refreshToken":"YOUR_REFRESH_TOKEN"}'
-```
-
-## Безпека
-
-- Паролі зберігаються лише як bcrypt-хеші.
-- Access token діє 15 хвилин, refresh token — 7 днів.
-- Refresh tokens зберігаються в БД та обертаються при refresh.
-- `JWT_SECRET` і `JWT_REFRESH_SECRET` мають бути різними випадковими секретами.
-- `.env` не комітиться до Git.
-
-## Структура
+Protected endpoints require a valid JWT access token in the Authorization header:
 
 ```text
-prisma/
-  migrations/20261029000000_init/migration.sql
-  schema.prisma
-  client.ts
-src/
-  controllers/
-  middleware/
-  routes/
-  validators/
-  types/
-  openapi.ts
-app.ts
+Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
+
+## Validation and Error Handling
+
+The API validates incoming request data using Zod.
+
+Examples of validation rules:
+
+- Announcement title must contain at least 3 characters.
+- Price must be greater than or equal to 0.
+- Required fields cannot be omitted.
+- Invalid request data returns `400 Bad Request`.
+
+### HTTP Status Codes
+
+| Status | Description                    |
+| ------ | ------------------------------ |
+| 200    | Request completed successfully |
+| 201    | Resource created successfully  |
+| 204    | Resource deleted successfully  |
+| 400    | Validation error               |
+| 401    | Unauthorized                   |
+| 403    | Access denied                  |
+| 404    | Resource not found             |
+| 500    | Internal server error          |
+
+## Authorization and Security
+
+- Passwords are not included in public user responses.
+- Protected routes require JWT authentication.
+- Users can modify or delete only their own announcements.
+- Unauthorized requests are rejected.
+- Refresh tokens are stored and managed by the application.
+
+## Pagination
+
+The announcements endpoint supports pagination.
+
+Example:
+
+```text
+GET /announcements?page=1&perPage=10
+```
+
+The response includes announcement data and pagination metadata:
+
+```json
+{
+  "data": [],
+  "pagination": {
+    "total": 0,
+    "page": 1,
+    "totalPages": 0,
+    "perPage": 10
+  }
+}
+```
+
+## Testing
+
+The API was manually tested using Swagger UI.
+
+The following scenarios were verified:
+
+- User registration and login
+- Retrieving the authenticated user
+- Creating announcements
+- Retrieving announcements
+- Updating announcements
+- Deleting announcements
+- Validation of empty titles
+- Validation of negative prices
+- Validation of missing required fields
+- Unauthorized access without a token
+- Access control for announcements belonging to another user
+- Correct HTTP status codes for successful and unsuccessful requests
+
+## License
+
+This project was created for educational purposes as part of a Node.js / TypeScript assignment.
